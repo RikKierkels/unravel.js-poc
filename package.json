@@ -1,0 +1,6 @@
+{
+  "name": "js-dep-graph",
+  "version": "0.01",
+  "main": "index.js",
+  "license": "MIT"
+}
