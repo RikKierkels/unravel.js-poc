@@ -21,5 +21,32 @@ const toPathWithStats = (path) =>
 
   for (let file of files) {
     const ast = parser.parse(await file, { sourceType: "module" });
+    const nodes = visit(ast);
+    console.log(nodes);
+    console.log(identifiers.map((identifier) => identifier(nodes)));
   }
 })(["modules/*"]);
+
+function visit(ast, visited = new WeakSet()) {
+  if (!ast || visited.has(ast)) return [];
+
+  if (Array.isArray(ast)) {
+    return ast.flatMap((node) => visit(node, visited));
+  }
+
+  if (ast.type) {
+    return Object.keys(ast)
+      .filter((key) => key !== "comments")
+      .flatMap((key) => visit(ast[key], visited.add(ast)))
+      .concat(ast);
+  }
+
+  return [];
+}
+
+// TODO: Shitty name
+const identifiers = [identifyImportDeclaration];
+
+function identifyImportDeclaration(node) {
+  return node.type === "ImportDeclaration" && node.source && node.source.value;
+}

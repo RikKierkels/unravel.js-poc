@@ -13,12 +13,12 @@ function c() {
   const e = import(() => ""); // 4-1
 });
 
-const a = require("fs"); // 5
+const f = require("fs"); // 5
 
 require("fs"); // 6
 
 function funct() { // 3
-  const b = require("fs"); // 3-1
+  const g = require("fs"); // 3-1
 }
 
 export default {};
