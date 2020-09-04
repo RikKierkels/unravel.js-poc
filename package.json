@@ -2,5 +2,15 @@
   "name": "js-dep-graph",
   "version": "0.01",
   "main": "index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "start": "node index"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.11.5",
+    "glob": "^7.1.6"
+  },
+  "devDependencies": {
+    "prettier": "^2.1.1"
+  }
 }
