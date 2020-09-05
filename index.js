@@ -56,7 +56,7 @@ function visit(ast, visited = new WeakSet()) {
 
 function makeChecker(checkers) {
   return function (node) {
-    return checkers.flatMap((inspect) => inspect(node));
+    return checkers.flatMap((check) => check(node));
   };
 }
 
