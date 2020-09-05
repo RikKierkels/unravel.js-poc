@@ -15,6 +15,7 @@ const readFile = (path) => fs.promises.readFile(path, 'utf-8');
     .filter(([_, stats]) => stats && stats.isFile())
     .map(([path]) => ({ path, content: readFile(path) }));
 
+  // TODO: Get rid of array somehow
   let filesWithDependencies = [];
   for (let { path, content } of files) {
     const ast = parser.parse(await content, { sourceType: 'module' });
