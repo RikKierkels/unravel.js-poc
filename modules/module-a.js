@@ -1,4 +1,5 @@
 import moduleB from "./module-b.js"; // 0
+import moduleC from "./module-c.js"; // 0
 
 const a = import(() => ""); // 1
 
