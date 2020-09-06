@@ -4,8 +4,9 @@ import { readFile } from 'fs/promises';
 export type File = {
   name: string;
   content: string;
-  dependencies?: File[];
 };
+
+export type FileWithDependencies = File & { dependencies?: string[] };
 
 function getFileNames(patterns: string[]): string[] {
   return patterns
