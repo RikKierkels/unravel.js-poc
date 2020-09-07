@@ -1,31 +1,47 @@
 import { File as Ast, Node } from '@babel/types';
-import { parse } from '@babel/parser';
-import { getFiles, getFileNames, File, FileWithDependencies } from './file';
-import { Checker, checkImportDeclaration } from './check';
+import { parse as parseFile } from '@babel/parser';
+import { detectImportDeclaration, Detector } from './check';
 import visit from './visit';
-
-export type Maybe<T> = T | null | undefined;
+import { glob } from 'glob';
+import { readFile } from 'fs/promises';
 
 type Options = {
-  checkers: Checker[];
+  detectors: Detector[];
+  ignore: string[];
 };
 
-const defaultOptions: Options = {
-  checkers: [checkImportDeclaration],
-};
+async function run(patterns: string[], { detectors, ignore }: Options) {
+  const debug = patterns
+    .flatMap((pattern) => match(pattern, ignore))
+    .reduce<string[]>(
+      (filenames, filename) => (filenames.includes(filename) ? filenames : [...filenames, filename]),
+      [],
+    )
+    .map((filename) => getDependencies(detectors, filename).then((dependencies) => ({ filename, dependencies })));
 
-async function run(patterns: string[], { checkers }: Options = defaultOptions) {
-  const files = await getFiles(getFileNames(patterns));
-
-  const filesWithDependencies = files
-    .map<[File, Ast]>((file) => [file, parse(file.content, { sourceType: 'module' })])
-    .map<[File, Node[]]>(([file, ast]) => [file, visit(ast)])
-    .map<FileWithDependencies>(([file, nodes]) => ({
-      ...file,
-      dependencies: nodes.flatMap((node) => checkers.flatMap((checker) => checker(node))),
-    }));
-
-  console.log(files);
+  console.log(await Promise.all(debug));
 }
 
-(async () => await run(['src/test-modules/*']))();
+function match(pattern: string, ignore: string[] = []): string[] {
+  return glob.sync(pattern, { nodir: true, ignore });
+}
+
+async function getDependencies(detectors: Detector[], filename: string): Promise<string[]> {
+  const ast = await parse(filename);
+  return visit(ast).flatMap((node) => detect(detectors, node));
+}
+
+async function parse(filename: string): Promise<Ast> {
+  const file = await readFile(filename, 'utf-8');
+  return parseFile(file, { sourceType: 'module' });
+}
+
+function detect(detectors: Detector[], node: Node): string[] {
+  return detectors.map((detect) => detect(node) || '').filter((result) => result);
+}
+
+(async () =>
+  await run(['src/test-modules/*'], {
+    detectors: [detectImportDeclaration],
+    ignore: ['src/test-modules/module-c.js'],
+  }))();

@@ -1,8 +1,8 @@
 import { Node } from '@babel/types';
-import { Maybe } from './index';
 
-export type Checker = (node: Node) => [string] | [];
+export type Maybe<T> = T | null | undefined;
+export type Detector = (node: Node) => Maybe<string>;
 
-export function checkImportDeclaration(node: Node): [string] | [] {
-  return node.type === 'ImportDeclaration' && node.source && node.source.value ? [node.source.value] : [];
+export function detectImportDeclaration(node: Node): Maybe<string> {
+  return node.type === 'ImportDeclaration' && node.source && node.source.value ? node.source.value : null;
 }
