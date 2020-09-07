@@ -1,9 +1,9 @@
-import { File as Ast, Node } from '@babel/types';
-import { parse as parseFile } from '@babel/parser';
-import { detectImportDeclaration, Detector } from './check';
-import visit from './visit';
-import { glob } from 'glob';
 import { readFile } from 'fs/promises';
+import { glob } from 'glob';
+import { Node } from '@babel/types';
+import { parse as parseFile } from '@babel/parser';
+import { detectImportDeclaration, Detector } from './detect';
+import visit, { Ast } from './visit';
 
 type Options = {
   detectors: Detector[];

@@ -1,4 +1,6 @@
-import { File as Ast, Node } from '@babel/types';
+import { File, Node } from '@babel/types';
+
+export type Ast = File;
 
 export default function visit(ast: Ast, visited = new WeakSet<Node>()): Node[] {
   if (!ast || visited.has(ast)) return [];
