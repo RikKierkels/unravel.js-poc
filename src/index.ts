@@ -1,7 +1,8 @@
 import { readFile } from 'fs/promises';
-import { glob } from 'glob';
+import { sync } from 'glob';
+import { resolve, join, dirname } from 'path';
 import { Node } from '@babel/types';
-import { parse as parseFile } from '@babel/parser';
+import { parse } from '@babel/parser';
 import { detectImportDeclaration, Detector } from './detect';
 import visit, { Ast } from './visit';
 
@@ -23,25 +24,31 @@ async function run(patterns: string[], { detectors, ignore }: Options) {
 }
 
 function match(pattern: string, ignore: string[] = []): string[] {
-  return glob.sync(pattern, { nodir: true, ignore });
+  return sync(pattern, { absolute: true, ignore, nodir: true });
 }
 
 async function getDependencies(detectors: Detector[], filename: string): Promise<string[]> {
-  const ast = await parse(filename);
-  return visit(ast).flatMap((node) => detect(detectors, node));
+  const ast = await parseFile(filename);
+  return visit(ast)
+    .flatMap((node) => detect(detectors, node))
+    .flatMap((dependency) => resolveRelativeTo(filename, dependency));
 }
 
-async function parse(filename: string): Promise<Ast> {
+async function parseFile(filename: string): Promise<Ast> {
   const file = await readFile(filename, 'utf-8');
-  return parseFile(file, { sourceType: 'module' });
+  return parse(file, { sourceType: 'module' });
 }
 
 function detect(detectors: Detector[], node: Node): string[] {
   return detectors.map((detect) => detect(node) || '').filter((result) => result);
 }
 
+function resolveRelativeTo(filename: string, dependency: string): string {
+  return join(dirname(filename), dependency);
+}
+
 (async () =>
-  await run(['src/test-modules/*'], {
+  await run(['src/test-modules/**'], {
     detectors: [detectImportDeclaration],
     ignore: ['src/test-modules/module-c.js'],
   }))();
