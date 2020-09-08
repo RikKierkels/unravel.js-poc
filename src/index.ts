@@ -25,7 +25,7 @@ async function run(patterns: string[], { detectors, ignore }: Options) {
   let paths = await Promise.all(pathsWithDependencies);
 
   // TODO: Find a cleaner way to handle file extensions
-  paths = paths.flatMap(({ path, dependencies }) => ({
+  paths = paths.map(({ path, dependencies }) => ({
     path: withoutFileExtension(path),
     dependencies: dependencies.map(withoutFileExtension),
   }));
@@ -67,7 +67,7 @@ async function getDependencies(detectors: Detector[], filepath: string): Promise
 
   return visit(ast)
     .flatMap((node) => detect(detectors, node))
-    .flatMap((dependency) => resolveRelativeTo(filepath, dependency));
+    .map((dependency) => resolveRelativeTo(filepath, dependency));
 }
 
 async function parseFile(filepath: string): Promise<Ast> {
