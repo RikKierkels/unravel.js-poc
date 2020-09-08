@@ -24,6 +24,7 @@ async function run(patterns: string[], { detectors, ignore }: Options) {
 
   let paths = await Promise.all(pathsWithDependencies);
 
+  // TODO: Find a cleaner way to handle file extensions
   paths = paths.flatMap(({ path, dependencies }) => ({
     path: withoutFileExtension(path),
     dependencies: dependencies.map(withoutFileExtension),
