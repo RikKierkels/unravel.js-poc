@@ -23,7 +23,7 @@ type Options = {
 };
 
 async function run(patterns: string[], { detectors, ignore }: Options) {
-  let dependencies = (
+  let dependencies: Dependency[] = (
     await Promise.all(
       patterns
         .flatMap((pattern) => match(pattern, ignore))
@@ -33,7 +33,7 @@ async function run(patterns: string[], { detectors, ignore }: Options) {
   )
     .flat()
     // TODO: Find better way of handling file extensions
-    .map<Dependency>(({ from, to }) => ({ from: withoutFileExtension(from), to: withoutFileExtension(to) }));
+    .map(({ from, to }) => ({ from: withoutFileExtension(from), to: withoutFileExtension(to) }));
 
   let files = mapDependenciesToUniqueFiles(dependencies);
 
@@ -62,16 +62,16 @@ async function getDependencies(detectors: Detector[], filepath: string): Promise
 }
 
 async function parseFile(filepath: string): Promise<Ast> {
-  const file = await readFile(filepath, 'utf-8');
-  return parse(file, { sourceType: 'module' });
+  const fileContents = await readFile(filepath, 'utf-8');
+  return parse(fileContents, { sourceType: 'module' });
 }
 
 function detect(detectors: Detector[], node: Node): string[] {
   return detectors.map((detect) => detect(node) || '').filter((result) => result);
 }
 
-function resolveRelativeTo(filepath: string, otherFilePath: string): string {
-  return join(dirname(filepath), otherFilePath);
+function resolveRelativeTo(path: string, otherPath: string): string {
+  return join(dirname(path), otherPath);
 }
 
 function mapDependenciesToUniqueFiles(dependencies: Dependency[]): File[] {
