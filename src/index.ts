@@ -6,8 +6,14 @@ import { parse } from '@babel/parser';
 import { detectImportDeclaration, Detector } from './detect';
 import visit, { Ast } from './visit';
 
+type Dependency = {
+  from: string;
+  to: string;
+};
+
 type File = {
   path: string;
+  // TODO: Other name? Confusing as you expect an array of type Dependency here.
   dependencies: File[];
 };
 
@@ -17,40 +23,24 @@ type Options = {
 };
 
 async function run(patterns: string[], { detectors, ignore }: Options) {
-  const pathsWithDependencies = patterns
-    .flatMap((pattern) => match(pattern, ignore))
-    .reduce<string[]>((paths, path) => (paths.includes(path) ? paths : [...paths, path]), [])
-    .map((path) => getDependencies(detectors, path).then((dependencies) => ({ path, dependencies })));
+  let dependencies = (
+    await Promise.all(
+      patterns
+        .flatMap((pattern) => match(pattern, ignore))
+        .reduce<string[]>((paths, path) => (paths.includes(path) ? paths : [...paths, path]), [])
+        .map((path) => getDependencies(detectors, path)),
+    )
+  )
+    .flat()
+    // TODO: Find better way of handling file extensions
+    .map<Dependency>(({ from, to }) => ({ from: withoutFileExtension(from), to: withoutFileExtension(to) }));
 
-  let paths = await Promise.all(pathsWithDependencies);
+  let files = mapDependenciesToUniqueFiles(dependencies);
 
-  // TODO: Find a cleaner way to handle file extensions
-  paths = paths.map(({ path, dependencies }) => ({
-    path: withoutFileExtension(path),
-    dependencies: dependencies.map(withoutFileExtension),
-  }));
-
-  // TODO: Refactor this to something that's actually readable and not some imperative mess :-)
-  // TODO: What about circular dependencies? That would trip up graph logic
-  let files: File[] = [];
-  for (const path of paths) {
-    let file = files.find((file) => file.path === path.path);
-
-    if (!file) {
-      file = { path: path.path, dependencies: [] };
-      files = [...files, file];
-    }
-
-    for (let dependency of path.dependencies) {
-      let dependencyFile = files.find((file) => file.path === dependency);
-
-      if (!dependencyFile) {
-        dependencyFile = { path: dependency, dependencies: [] };
-        files = [...files, dependencyFile];
-      }
-
-      file.dependencies = [...file.dependencies, dependencyFile];
-    }
+  for (const file of files) {
+    file.dependencies = dependencies
+      .filter(({ from }) => from === file.path)
+      .flatMap(({ to }) => files.find((file) => file.path === to) || []);
   }
 }
 
@@ -62,12 +52,13 @@ function withoutFileExtension(path: string): string {
   return path.split('.')[0];
 }
 
-async function getDependencies(detectors: Detector[], filepath: string): Promise<string[]> {
+async function getDependencies(detectors: Detector[], filepath: string): Promise<Dependency[]> {
   const ast = await parseFile(filepath);
 
   return visit(ast)
     .flatMap((node) => detect(detectors, node))
-    .map((dependency) => resolveRelativeTo(filepath, dependency));
+    .map((pathOfDependency) => resolveRelativeTo(filepath, pathOfDependency))
+    .flatMap((dependency) => ({ from: filepath, to: dependency }));
 }
 
 async function parseFile(filepath: string): Promise<Ast> {
@@ -79,8 +70,20 @@ function detect(detectors: Detector[], node: Node): string[] {
   return detectors.map((detect) => detect(node) || '').filter((result) => result);
 }
 
-function resolveRelativeTo(filepath: string, dependency: string): string {
-  return join(dirname(filepath), dependency);
+function resolveRelativeTo(filepath: string, otherFilePath: string): string {
+  return join(dirname(filepath), otherFilePath);
+}
+
+function mapDependenciesToUniqueFiles(dependencies: Dependency[]): File[] {
+  return dependencies.reduce<File[]>(
+    (files, { from, to }) => [
+      ...files,
+      ...[from, to]
+        .filter((path) => !files.some((file) => file.path === path))
+        .map((path) => ({ path, dependencies: [] })),
+    ],
+    [],
+  );
 }
 
 (async () =>
