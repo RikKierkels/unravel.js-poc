@@ -58,7 +58,7 @@ async function getDependencies(detectors: Detector[], filepath: string): Promise
   return visit(ast)
     .flatMap((node) => detect(detectors, node))
     .map((pathOfDependency) => resolveRelativeTo(filepath, pathOfDependency))
-    .flatMap((dependency) => ({ from: filepath, to: dependency }));
+    .map((dependency) => ({ from: filepath, to: dependency }));
 }
 
 async function parseFile(filepath: string): Promise<Ast> {
