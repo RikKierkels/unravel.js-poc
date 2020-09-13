@@ -1,6 +1,6 @@
 import { readFile } from 'fs/promises';
 import { sync } from 'glob';
-import { join, dirname } from 'path';
+import { join, dirname, parse as parsePath } from 'path';
 import { Node } from '@babel/types';
 import { parse } from '@babel/parser';
 import { detectImportDeclaration, Detector, detectRequireCallExpression } from './detect';
@@ -49,16 +49,20 @@ function match(pattern: string, ignore: string[] = []): string[] {
 }
 
 function withoutFileExtension(path: string): string {
-  return path.split('.')[0];
+  const { root, dir, name } = parsePath(path);
+  return join(root, dir, name);
 }
 
 async function getDependencies(detectors: Detector[], filepath: string): Promise<Dependency[]> {
   const ast = await parseFile(filepath);
 
-  return visit(ast)
-    .flatMap((node) => detect(detectors, node))
-    .map((pathOfDependency) => resolveRelativeTo(filepath, pathOfDependency))
-    .map((dependency) => ({ from: filepath, to: dependency }));
+  return (
+    visit(ast)
+      .flatMap((node) => detect(detectors, node))
+      // TODO: Handle package imports/requires
+      .map((pathOfDependency) => resolveRelativeTo(filepath, pathOfDependency))
+      .map((pathOfDependency) => ({ from: filepath, to: pathOfDependency }))
+  );
 }
 
 async function parseFile(filepath: string): Promise<Ast> {
