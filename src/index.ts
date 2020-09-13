@@ -3,7 +3,7 @@ import { sync } from 'glob';
 import { join, dirname } from 'path';
 import { Node } from '@babel/types';
 import { parse } from '@babel/parser';
-import { detectImportDeclaration, Detector } from './detect';
+import { detectImportDeclaration, Detector, detectRequireCallExpression } from './detect';
 import visit, { Ast } from './visit';
 
 type Dependency = {
@@ -11,10 +11,10 @@ type Dependency = {
   to: string;
 };
 
-type File = {
+type Module = {
   path: string;
   // TODO: Other name? Confusing as you expect an array of type Dependency here.
-  dependencies: File[];
+  dependencies: Module[];
 };
 
 type Options = {
@@ -32,16 +32,16 @@ async function run(patterns: string[], { detectors, ignore }: Options) {
     )
   )
     .flat()
-    // TODO: Find better way of handling file extensions
     .map(({ from, to }) => ({ from: withoutFileExtension(from), to: withoutFileExtension(to) }));
 
-  let files = mapDependenciesToUniqueFiles(dependencies);
+  const modules = mapToUniqueModules(dependencies).map((module, _, modules) => {
+    module.dependencies = dependencies
+      .filter(({ from }) => from === module.path)
+      .flatMap(({ to }) => modules.find((module) => module.path === to) || []);
+    return module;
+  });
 
-  for (const file of files) {
-    file.dependencies = dependencies
-      .filter(({ from }) => from === file.path)
-      .flatMap(({ to }) => files.find((file) => file.path === to) || []);
-  }
+  console.log(modules);
 }
 
 function match(pattern: string, ignore: string[] = []): string[] {
@@ -74,12 +74,12 @@ function resolveRelativeTo(path: string, otherPath: string): string {
   return join(dirname(path), otherPath);
 }
 
-function mapDependenciesToUniqueFiles(dependencies: Dependency[]): File[] {
-  return dependencies.reduce<File[]>(
-    (files, { from, to }) => [
-      ...files,
+function mapToUniqueModules(dependencies: Dependency[]): Module[] {
+  return dependencies.reduce<Module[]>(
+    (modules, { from, to }) => [
+      ...modules,
       ...[from, to]
-        .filter((path) => !files.some((file) => file.path === path))
+        .filter((path) => !modules.some((module) => module.path === path))
         .map((path) => ({ path, dependencies: [] })),
     ],
     [],
@@ -88,6 +88,6 @@ function mapDependenciesToUniqueFiles(dependencies: Dependency[]): File[] {
 
 (async () =>
   await run(['src/test-modules/**'], {
-    detectors: [detectImportDeclaration],
+    detectors: [detectImportDeclaration, detectRequireCallExpression],
     ignore: ['src/test-modules/module-c.js'],
   }))();
