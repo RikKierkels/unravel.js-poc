@@ -1,10 +1,13 @@
-import { readFile } from 'fs/promises';
+import { readFile } from 'fs';
 import { sync } from 'glob';
 import { join, dirname, parse as parsePath } from 'path';
 import { Node } from '@babel/types';
 import { parse } from '@babel/parser';
 import { detectImportDeclaration, Detector, detectRequireCallExpression } from './detect';
 import visit, { Ast } from './visit';
+
+const readFileAsync = (path: string): Promise<string> =>
+  new Promise((resolve) => readFile(path, 'utf-8', (err, data) => (err ? resolve('') : resolve(data))));
 
 type Dependency = {
   from: string;
@@ -66,7 +69,7 @@ async function getDependencies(detectors: Detector[], filepath: string): Promise
 }
 
 async function parseFile(filepath: string): Promise<Ast> {
-  const fileContents = await readFile(filepath, 'utf-8');
+  const fileContents = await readFileAsync(filepath);
   return parse(fileContents, { sourceType: 'module' });
 }
 
