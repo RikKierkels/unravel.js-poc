@@ -1,7 +1,7 @@
 import { readFile } from 'fs';
 import { sync } from 'glob';
 import { join, dirname, parse as parsePath } from 'path';
-import { Node, privateName } from '@babel/types';
+import { Node } from '@babel/types';
 import { cloneDeep, last } from 'lodash';
 import { parse } from '@babel/parser';
 import { detectImportDeclaration, Detector, detectRequireCallExpression } from './detect';
