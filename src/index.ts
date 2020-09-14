@@ -1,10 +1,14 @@
-import { readFile } from 'fs/promises';
+import { promises } from 'fs';
 import { sync } from 'glob';
 import { join, dirname, parse as parsePath } from 'path';
-import { Node } from '@babel/types';
+import { Node, privateName } from '@babel/types';
+import { cloneDeep, last } from 'lodash';
 import { parse } from '@babel/parser';
 import { detectImportDeclaration, Detector, detectRequireCallExpression } from './detect';
 import visit, { Ast } from './visit';
+import chalk from 'chalk';
+
+const readFile = promises.readFile;
 
 type Dependency = {
   from: string;
@@ -12,17 +16,19 @@ type Dependency = {
 };
 
 type Module = {
+  name: string;
   path: string;
   // TODO: Other name? Confusing as you expect an array of type Dependency here.
   dependencies: Module[];
 };
 
 type Options = {
+  root: string;
   detectors: Detector[];
   ignore: string[];
 };
 
-async function run(patterns: string[], { detectors, ignore }: Options) {
+async function run(patterns: string[], { detectors, ignore, root }: Options) {
   let dependencies: Dependency[] = (
     await Promise.all(
       patterns
@@ -34,14 +40,19 @@ async function run(patterns: string[], { detectors, ignore }: Options) {
     .flat()
     .map(({ from, to }) => ({ from: withoutFileExtension(from), to: withoutFileExtension(to) }));
 
-  const modules = mapToUniqueModules(dependencies).map((module, _, modules) => {
+  if (!root.endsWith('\\')) {
+    root += '\\';
+  }
+
+  const modules = mapToUniqueModules(dependencies, root).map((module, _, modules) => {
     module.dependencies = dependencies
       .filter(({ from }) => from === module.path)
-      .flatMap(({ to }) => modules.find((module) => module.path === to) || []);
+      .flatMap(({ to }) => modules.find((module) => module.path === to) || [])
+      .map((modules) => cloneDeep(modules));
     return module;
   });
 
-  console.log(modules);
+  modules.forEach((module) => print([module]));
 }
 
 function match(pattern: string, ignore: string[] = []): string[] {
@@ -49,8 +60,8 @@ function match(pattern: string, ignore: string[] = []): string[] {
 }
 
 function withoutFileExtension(path: string): string {
-  const { root, dir, name } = parsePath(path);
-  return join(root, dir, name);
+  const { dir, name } = parsePath(path);
+  return join(dir, name);
 }
 
 async function getDependencies(detectors: Detector[], filepath: string): Promise<Dependency[]> {
@@ -78,20 +89,45 @@ function resolveRelativeTo(path: string, otherPath: string): string {
   return join(dirname(path), otherPath);
 }
 
-function mapToUniqueModules(dependencies: Dependency[]): Module[] {
+function mapToUniqueModules(dependencies: Dependency[], rootDirectory: string): Module[] {
   return dependencies.reduce<Module[]>(
     (modules, { from, to }) => [
       ...modules,
       ...[from, to]
         .filter((path) => !modules.some((module) => module.path === path))
-        .map((path) => ({ path, dependencies: [] })),
+        .map((path) => ({ name: getModuleName(rootDirectory, path), path, dependencies: [] })),
     ],
     [],
   );
 }
 
+function getModuleName(rootDirectory: string, path: string): string {
+  const { dir, name } = parsePath(path);
+  return join(last(dir.split(rootDirectory))!, name);
+}
+
+function print(modules: Module[], indentation: number = 0): void {
+  const isRootModule = indentation === 0;
+
+  modules.forEach((module) => {
+    if (isRootModule) {
+      console.log(chalk.inverse(module.name));
+    } else {
+      const prefix = '-'.repeat(indentation) + '→ ';
+      console.log(chalk.white(`${prefix}${module.name}`));
+    }
+
+    print(module.dependencies, indentation + 1);
+  });
+
+  if (isRootModule) {
+    console.log('\n');
+  }
+}
+
 (async () =>
   await run(['src/test-modules/**'], {
+    root: 'src',
     detectors: [detectImportDeclaration, detectRequireCallExpression],
     ignore: ['src/test-modules/module-c.js'],
   }))();

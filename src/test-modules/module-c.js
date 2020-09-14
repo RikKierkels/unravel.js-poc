@@ -1,2 +1,2 @@
-import moduleA from "./module-a.js";
+import moduleA from './module-a.js';
 export default {};
