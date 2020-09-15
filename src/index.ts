@@ -33,17 +33,13 @@ async function run(patterns: string[], { detectors, ignore, root }: Options) {
   let dependencies: Dependency[] = (
     await Promise.all(
       patterns
-        .flatMap((pattern) => match(pattern, ignore))
+        .flatMap((pattern) => match(pattern, ignore, root))
         .reduce<string[]>((paths, path) => (paths.includes(path) ? paths : [...paths, path]), [])
         .map((path) => getDependencies(detectors, path)),
     )
   )
     .flat()
     .map(({ from, to }) => ({ from: withoutFileExtension(from), to: withoutFileExtension(to) }));
-
-  if (!root.endsWith('\\')) {
-    root += '\\';
-  }
 
   const modules = mapToUniqueModules(dependencies, root).map((module, _, modules) => {
     module.dependencies = dependencies
@@ -56,8 +52,8 @@ async function run(patterns: string[], { detectors, ignore, root }: Options) {
   modules.forEach((module) => print([module]));
 }
 
-function match(pattern: string, ignore: string[] = []): string[] {
-  return sync(pattern, { absolute: true, ignore, nodir: true });
+function match(pattern: string, ignore: string[] = [], root: string): string[] {
+  return sync(pattern, { absolute: true, ignore, nodir: true, root });
 }
 
 function withoutFileExtension(path: string): string {
