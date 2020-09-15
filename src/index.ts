@@ -123,8 +123,8 @@ function print(modules: Module[], indentation: number = 0): void {
 }
 
 (async () =>
-  await run(['src/test-modules/**'], {
-    root: 'src',
+  await run(['moment/src/lib/**/*.js'], {
+    root: 'moment',
     detectors: [detectImportDeclaration, detectRequireCallExpression],
     ignore: ['src/test-modules/module-c.js'],
   }))();
