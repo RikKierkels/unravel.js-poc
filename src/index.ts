@@ -103,8 +103,12 @@ function getModuleName(rootDirectory: string, path: string): string {
   return join(last(dir.split(rootDirectory))!, name);
 }
 
-function print(modules: Module[], indentation: number = 0): void {
+function print(modules: Module[], indentation: number = 0, maxIndentation = 2): void {
   const isRootModule = indentation === 0;
+
+  if (indentation === maxIndentation) {
+    return;
+  }
 
   modules.forEach((module) => {
     if (isRootModule) {
@@ -124,7 +128,7 @@ function print(modules: Module[], indentation: number = 0): void {
 
 (async () =>
   await run(['moment/src/lib/**/*.js'], {
-    root: 'moment',
+    root: 'moment\\src\\lib',
     detectors: [detectImportDeclaration, detectRequireCallExpression],
     ignore: ['src/test-modules/module-c.js'],
   }))();
