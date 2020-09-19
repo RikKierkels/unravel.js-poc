@@ -7,9 +7,16 @@ import { parse } from '@babel/parser';
 import { detectImportDeclaration, Detector, detectRequireCallExpression } from './detect';
 import visit, { Ast } from './visit';
 import chalk from 'chalk';
+import parseEs6, { Parser } from './parser/es6';
+import parseTypescript from './parser/typescript';
 
 const readFileAsync = (path: string): Promise<string> =>
   new Promise((resolve) => readFile(path, 'utf-8', (err, data) => (err ? resolve('') : resolve(data))));
+
+const parsers: { [key: string]: Parser } = {
+  '*.js': parseEs6,
+  '*.ts': parseTypescript,
+};
 
 type Dependency = {
   from: string;
@@ -74,8 +81,8 @@ async function getDependencies(detectors: Detector[], filepath: string): Promise
 }
 
 async function parseFile(filepath: string): Promise<Ast> {
-  const fileContents = await readFileAsync(filepath);
-  return parse(fileContents, { sourceType: 'module' });
+  const fileContent = await readFileAsync(filepath);
+  return parse(fileContent, { sourceType: 'module' });
 }
 
 function detect(detectors: Detector[], node: Node): string[] {
@@ -103,11 +110,14 @@ function getModuleName(rootDirectory: string, path: string): string {
   return join(last(dir.split(rootDirectory))!, name);
 }
 
-function print(modules: Module[], indentation: number = 0): void {
+function print(modules: Module[], indentation: number = 0, maxIndentation = 2): void {
+  if (indentation === maxIndentation) return;
+
   const isRootModule = indentation === 0;
 
   modules.forEach((module) => {
     if (isRootModule) {
+      console.log('\n');
       console.log(chalk.inverse(module.name));
     } else {
       const prefix = '-'.repeat(indentation) + '→ ';
@@ -116,10 +126,6 @@ function print(modules: Module[], indentation: number = 0): void {
 
     print(module.dependencies, indentation + 1);
   });
-
-  if (isRootModule) {
-    console.log('\n');
-  }
 }
 
 (async () =>
