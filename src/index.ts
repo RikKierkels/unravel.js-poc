@@ -10,14 +10,6 @@ import chalk from 'chalk';
 import parseEs6, { Parser } from './parser/es6';
 import parseTypescript from './parser/typescript';
 
-const readFileAsync = (path: string): Promise<string> =>
-  new Promise((resolve) => readFile(path, 'utf-8', (err, data) => (err ? resolve('') : resolve(data))));
-
-const parsers: { [key: string]: Parser } = {
-  '*.js': parseEs6,
-  '*.ts': parseTypescript,
-};
-
 type Dependency = {
   from: string;
   to: string;
@@ -44,9 +36,7 @@ async function run(patterns: string[], { detectors, ignore, root }: Options) {
         .reduce<string[]>((paths, path) => (paths.includes(path) ? paths : [...paths, path]), [])
         .map((path) => getDependencies(detectors, path)),
     )
-  )
-    .flat()
-    .map(({ from, to }) => ({ from: withoutFileExtension(from), to: withoutFileExtension(to) }));
+  ).flat();
 
   const modules = mapToUniqueModules(dependencies, root).map((module, _, modules) => {
     module.dependencies = dependencies
@@ -71,13 +61,10 @@ function withoutFileExtension(path: string): string {
 async function getDependencies(detectors: Detector[], filepath: string): Promise<Dependency[]> {
   const ast = await parseFile(filepath);
 
-  return (
-    visit(ast)
-      .flatMap((node) => detect(detectors, node))
-      // TODO: Handle package imports/requires
-      .map((pathOfDependency) => resolveRelativeTo(filepath, pathOfDependency))
-      .map((pathOfDependency) => ({ from: filepath, to: pathOfDependency }))
-  );
+  return visit(ast)
+    .flatMap((node) => detect(detectors, node))
+    .map((pathOfDependency) => resolveRelativeTo(filepath, pathOfDependency))
+    .map((pathOfDependency) => ({ from: withoutFileExtension(filepath), to: withoutFileExtension(pathOfDependency) }));
 }
 
 async function parseFile(filepath: string): Promise<Ast> {
