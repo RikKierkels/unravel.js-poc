@@ -111,7 +111,7 @@ function print(modules: Module[], indentation: number = 0, maxIndentation = 2): 
 }
 
 (async () =>
-  await run(['src/test-modules/**'], {
+  await run(['src/**'], {
     root: 'src',
     detectors: [detectImportDeclaration, detectRequireCallExpression],
     ignore: ['src/test-modules/module-c.js'],
