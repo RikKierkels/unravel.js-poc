@@ -13,7 +13,6 @@ export default function parseTypescript(input: string): Ast {
       'classPrivateProperties',
       'classPrivateMethods',
       'decorators-legacy',
-      ['decorators', { decoratorsBeforeExport: true }],
       'doExpressions',
       'dynamicImport',
       'exportDefaultFrom',
