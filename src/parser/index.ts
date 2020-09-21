@@ -16,13 +16,13 @@ async function readFileAsync(path: string): Promise<string> {
   return new Promise((resolve) => readFile(path, 'utf-8', (err, data) => (err ? resolve('') : resolve(data))));
 }
 
-function getParser(path: string): ParseFn {
+function getParse(path: string): ParseFn {
   const { base } = parsePath(path);
-  const parser = parsers.find(({ pattern }) => new RegExp(pattern).test(base));
-  return () => parser?.parse(path) || parseEs6(path);
+  const parseFn = parsers.find(({ pattern }) => new RegExp(pattern).test(base))?.parse;
+  return parseFn || parseEs6;
 }
 
 export async function parse(path: string): Promise<Ast> {
-  const fileContent = await readFileAsync(path);
-  return getParser(path)(path);
+  const parse = getParse(path);
+  return readFileAsync(path).then((fileContent) => parse(fileContent));
 }

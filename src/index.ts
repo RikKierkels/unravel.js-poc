@@ -1,14 +1,11 @@
-import { readFile } from 'fs';
 import { sync } from 'glob';
-import { join, dirname, parse as parsePath } from 'path';
+import { dirname, join, parse as parsePath } from 'path';
 import { Node } from '@babel/types';
 import { cloneDeep, last } from 'lodash';
-import { parse } from '@babel/parser';
 import { detectImportDeclaration, Detector, detectRequireCallExpression } from './detect';
-import visit, { Ast } from './visit';
+import visit from './visit';
 import chalk from 'chalk';
-import parseEs6, { Parser } from './parser/es6';
-import parseTypescript from './parser/typescript';
+import { parse } from './parser';
 
 type Dependency = {
   from: string;
@@ -59,17 +56,15 @@ function withoutFileExtension(path: string): string {
 }
 
 async function getDependencies(detectors: Detector[], filepath: string): Promise<Dependency[]> {
-  const ast = await parseFile(filepath);
+  const ast = await parse(filepath);
 
   return visit(ast)
     .flatMap((node) => detect(detectors, node))
     .map((pathOfDependency) => resolveRelativeTo(filepath, pathOfDependency))
-    .map((pathOfDependency) => ({ from: withoutFileExtension(filepath), to: withoutFileExtension(pathOfDependency) }));
-}
-
-async function parseFile(filepath: string): Promise<Ast> {
-  const fileContent = await readFileAsync(filepath);
-  return parse(fileContent, { sourceType: 'module' });
+    .map((pathOfDependency) => ({
+      from: withoutFileExtension(filepath),
+      to: withoutFileExtension(pathOfDependency),
+    }));
 }
 
 function detect(detectors: Detector[], node: Node): string[] {
