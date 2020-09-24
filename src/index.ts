@@ -6,6 +6,7 @@ import { detectImportDeclaration, Detector, detectRequireCallExpression } from '
 import visit from './visit';
 import chalk from 'chalk';
 import { parse } from './parser';
+import { resolve } from './resolver';
 
 type Dependency = {
   from: string;
@@ -60,7 +61,7 @@ async function getDependencies(detectors: Detector[], filepath: string): Promise
 
   return visit(ast)
     .flatMap((node) => detect(detectors, node))
-    .map((pathOfDependency) => resolveRelativeTo(filepath, pathOfDependency))
+    .map((pathOfDependency) => resolve(filepath, pathOfDependency))
     .map((pathOfDependency) => ({
       from: withoutFileExtension(filepath),
       to: withoutFileExtension(pathOfDependency),
@@ -69,10 +70,6 @@ async function getDependencies(detectors: Detector[], filepath: string): Promise
 
 function detect(detectors: Detector[], node: Node): string[] {
   return detectors.map((detect) => detect(node) || '').filter((result) => result);
-}
-
-function resolveRelativeTo(path: string, otherPath: string): string {
-  return join(dirname(path), otherPath);
 }
 
 function mapToUniqueModules(dependencies: Dependency[], rootDirectory: string): Module[] {
