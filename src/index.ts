@@ -51,21 +51,12 @@ function match(pattern: string, ignore: string[] = [], root: string): string[] {
   return sync(pattern, { absolute: true, ignore, nodir: true, root });
 }
 
-function withoutFileExtension(path: string): string {
-  const { dir, name } = parsePath(path);
-  return join(dir, name);
-}
-
 async function getDependencies(detectors: Detector[], filepath: string): Promise<Dependency[]> {
   const ast = await parse(filepath);
 
   return visit(ast)
     .flatMap((node) => detect(detectors, node))
-    .map((pathOfDependency) => resolve(filepath, pathOfDependency))
-    .map((pathOfDependency) => ({
-      from: withoutFileExtension(filepath),
-      to: withoutFileExtension(pathOfDependency),
-    }));
+    .map((pathOfDependency) => ({ from: filepath, to: resolve(filepath, pathOfDependency) }));
 }
 
 function detect(detectors: Detector[], node: Node): string[] {
