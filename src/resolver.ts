@@ -1,7 +1,7 @@
 import path from 'path';
 
 export function resolve(modulePath: string, dependency: string): string {
-  if (isLikelyPackageImport(dependency)) return dependency;
+  if (isBuiltInModuleOrPackageDependency(dependency)) return dependency;
 
   try {
     return require.resolve(dependency, { paths: [path.dirname(modulePath)] });
@@ -10,8 +10,7 @@ export function resolve(modulePath: string, dependency: string): string {
   }
 }
 
-// TODO: Rename
-function isLikelyPackageImport(modulePath: string): boolean {
+function isBuiltInModuleOrPackageDependency(modulePath: string): boolean {
   return !isAbsolute(modulePath) && !isRelative(modulePath);
 }
 
@@ -20,6 +19,5 @@ function isAbsolute(modulePath: string): boolean {
 }
 
 function isRelative([firstChar]: string): boolean {
-  // TODO: Determine edge cases
   return firstChar === '.';
 }
