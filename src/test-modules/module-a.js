@@ -1,5 +1,6 @@
 import moduleB from './module-b.js'; // 0
 import moduleC from './module-c.js'; // 0
+import moduleD from 'src/test-modules/module-c.js';
 
 const a = import(() => ''); // 1
 
@@ -24,4 +25,9 @@ function funct() {
   const g = require('fs3'); // 3-1
 }
 
-export default {};
+const bla = require('./module-b');
+const bla2 = require('module-b');
+
+export default {
+  module: moduleD,
+};

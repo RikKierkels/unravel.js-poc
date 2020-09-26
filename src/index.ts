@@ -1,5 +1,5 @@
 import { sync } from 'glob';
-import { dirname, join, parse as parsePath } from 'path';
+import { join, parse as parsePath, resolve as resolvePath } from 'path';
 import { Node } from '@babel/types';
 import { cloneDeep, last } from 'lodash';
 import { detectImportDeclaration, Detector, detectRequireCallExpression } from './detect';
@@ -7,6 +7,7 @@ import visit from './visit';
 import chalk from 'chalk';
 import { parse } from './parser';
 import { resolve } from './resolver';
+import { getInstalledPackages } from './installed-packages';
 
 type Dependency = {
   from: string;
@@ -16,17 +17,19 @@ type Dependency = {
 type Module = {
   name: string;
   path: string;
-  // TODO: Other name? Confusing as you expect an array of type Dependency here.
   dependencies: Module[];
 };
 
 type Options = {
-  root: string;
+  root?: string;
+  ignore?: string[];
   detectors: Detector[];
-  ignore: string[];
 };
 
-async function run(patterns: string[], { detectors, ignore, root }: Options) {
+async function run(patterns: string[], { detectors = [], ignore = [], root = process.cwd() }: Options) {
+  const packages = getInstalledPackages(root);
+  console.log(packages);
+
   let dependencies: Dependency[] = (
     await Promise.all(
       patterns
@@ -100,7 +103,5 @@ function print(modules: Module[], indentation: number = 0, maxIndentation = 2): 
 
 (async () =>
   await run(['src/**'], {
-    root: 'src',
     detectors: [detectImportDeclaration, detectRequireCallExpression],
-    ignore: ['src/test-modules/module-c.js'],
   }))();
