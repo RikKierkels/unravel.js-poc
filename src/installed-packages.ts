@@ -4,12 +4,12 @@ import * as path from 'path';
 export function getInstalledPackages(root: string): string[] {
   return glob
     .sync('**/package.json', { root, ignore: ['node_modules/**'] })
-    .flatMap((packageJsonPath) => extractInstalledPackages(path.resolve(root, packageJsonPath)));
+    .flatMap((packagePath) => extractInstalledPackages(path.resolve(root, packagePath)));
 }
 
-function extractInstalledPackages(packageJsonPath: string): string[] {
+function extractInstalledPackages(packagePath: string): string[] {
   try {
-    const { dependencies, devDependencies } = require(packageJsonPath);
+    const { dependencies, devDependencies } = require(packagePath);
     return [...getKeysSafe(dependencies), ...getKeysSafe(devDependencies)];
   } catch {
     return [];

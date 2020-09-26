@@ -7,6 +7,7 @@ import { readFile } from 'fs';
 type Parse = (input: string) => Ast;
 type Parser = { pattern: string; parse: Parse };
 
+// TODO: Resolve via glob?
 const DEFAULT_PARSER = { pattern: '.js', parse: parseEs6 };
 const PARSERS: Parser[] = [DEFAULT_PARSER, { pattern: '.ts', parse: parseTypescript }];
 

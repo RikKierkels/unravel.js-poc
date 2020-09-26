@@ -27,8 +27,8 @@ type Options = {
 };
 
 async function run(patterns: string[], { detectors = [], ignore = [], root = process.cwd() }: Options) {
-  const packages = getInstalledPackages(root);
-  console.log(packages);
+  const installedPackages = getInstalledPackages(root);
+  console.log(installedPackages);
 
   let dependencies: Dependency[] = (
     await Promise.all(
