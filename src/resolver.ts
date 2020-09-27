@@ -1,27 +1,18 @@
 import path from 'path';
 import builtinModules from 'builtin-modules';
 
-export function resolve(modulePath: string, dependency: string): string {
-  if (isBuiltInModuleOrPackageDependency(dependency)) return dependency;
+export function resolve(modulePath: string, dependency: string, installedPackages: string[]): string {
+  // TODO: Resolve @alias paths
+  if (installedPackages.includes(dependency) || builtinModules.includes(dependency)) return dependency;
+
+  // TODO: Resolve absolute paths from root defined in config (ts/js/webpack etc.)
+  const paths = isRelative(dependency) ? [path.dirname(modulePath)] : [];
 
   try {
-    return require.resolve(dependency, { paths: [path.dirname(modulePath)] });
+    return require.resolve(dependency, { paths });
   } catch {
-    console.log(path.resolve(dependency));
     return dependency;
   }
-}
-
-function isBuiltInModule(module: string) {
-  return builtinModules.includes(module);
-}
-
-function isBuiltInModuleOrPackageDependency(module: string): boolean {
-  return !isAbsolute(module) && !isRelative(module);
-}
-
-function isAbsolute(module: string): boolean {
-  return path.resolve(module) === path.normalize(module);
 }
 
 function isRelative([firstChar]: string): boolean {

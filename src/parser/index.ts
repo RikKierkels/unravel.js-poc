@@ -1,26 +1,29 @@
 import parseEs6 from './es6';
 import parseTypescript from './typescript';
 import { Ast } from '../visit';
-import { parse as parsePath } from 'path';
 import { readFile } from 'fs';
+import * as path from 'path';
+import minimatch from 'minimatch';
+import { Maybe } from '../detect';
 
 type Parse = (input: string) => Ast;
 type Parser = { pattern: string; parse: Parse };
 
-// TODO: Resolve via glob?
-const DEFAULT_PARSER = { pattern: '.js', parse: parseEs6 };
-const PARSERS: Parser[] = [DEFAULT_PARSER, { pattern: '.ts', parse: parseTypescript }];
+const PARSERS: Parser[] = [
+  { pattern: '*.js', parse: parseEs6 },
+  { pattern: '*.ts', parse: parseTypescript },
+];
+
+export async function parse(filePath: string): Promise<Maybe<Ast>> {
+  const { base } = path.parse(filePath);
+  const parser = getParser(base);
+  return parser ? readFileAsync(filePath).then(parser.parse) : null;
+}
+
+function getParser(fileBase: string): Maybe<Parser> {
+  return PARSERS.find(({ pattern }) => minimatch(fileBase, pattern, { noglobstar: true }));
+}
 
 async function readFileAsync(path: string): Promise<string> {
   return new Promise((resolve) => readFile(path, 'utf-8', (err, data) => (err ? resolve('') : resolve(data))));
-}
-
-function getParser(path: string): Parser {
-  const { base } = parsePath(path);
-  return PARSERS.find(({ pattern }) => new RegExp(pattern).test(base)) || DEFAULT_PARSER;
-}
-
-export async function parse(path: string): Promise<Ast> {
-  const { parse } = getParser(path);
-  return readFileAsync(path).then(parse);
 }

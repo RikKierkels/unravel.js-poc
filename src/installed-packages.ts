@@ -1,5 +1,6 @@
 import * as glob from 'glob';
 import * as path from 'path';
+import { Maybe } from './detect';
 
 export function getInstalledPackages(root: string): string[] {
   return glob
@@ -16,6 +17,6 @@ function extractInstalledPackages(packagePath: string): string[] {
   }
 }
 
-function getKeysSafe(object: Object | undefined = {}): string[] {
-  return Object.keys(object);
+function getKeysSafe(object: Maybe<Object>): string[] {
+  return Object.keys(object || {});
 }

@@ -1,5 +1,5 @@
-import { sync } from 'glob';
-import { join, parse as parsePath, resolve as resolvePath } from 'path';
+import glob from 'glob';
+import { join, parse as parsePath } from 'path';
 import { Node } from '@babel/types';
 import { cloneDeep, last } from 'lodash';
 import { detectImportDeclaration, Detector, detectRequireCallExpression } from './detect';
@@ -28,14 +28,13 @@ type Options = {
 
 async function run(patterns: string[], { detectors = [], ignore = [], root = process.cwd() }: Options) {
   const installedPackages = getInstalledPackages(root);
-  console.log(installedPackages);
 
   let dependencies: Dependency[] = (
     await Promise.all(
       patterns
         .flatMap((pattern) => match(pattern, ignore, root))
         .reduce<string[]>((paths, path) => (paths.includes(path) ? paths : [...paths, path]), [])
-        .map((path) => getDependencies(detectors, path)),
+        .map((path) => getDependencies(detectors, path, installedPackages)),
     )
   ).flat();
 
@@ -51,15 +50,19 @@ async function run(patterns: string[], { detectors = [], ignore = [], root = pro
 }
 
 function match(pattern: string, ignore: string[] = [], root: string): string[] {
-  return sync(pattern, { absolute: true, ignore, nodir: true, root });
+  return glob.sync(pattern, { absolute: true, ignore, nodir: true, root });
 }
 
-async function getDependencies(detectors: Detector[], filepath: string): Promise<Dependency[]> {
+async function getDependencies(
+  detectors: Detector[],
+  filepath: string,
+  installedPackages: string[],
+): Promise<Dependency[]> {
   const ast = await parse(filepath);
 
   return visit(ast)
     .flatMap((node) => detect(detectors, node))
-    .map((pathOfDependency) => ({ from: filepath, to: resolve(filepath, pathOfDependency) }));
+    .map((pathOfDependency) => ({ from: filepath, to: resolve(filepath, pathOfDependency, installedPackages) }));
 }
 
 function detect(detectors: Detector[], node: Node): string[] {

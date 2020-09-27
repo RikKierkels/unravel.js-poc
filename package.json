@@ -12,7 +12,8 @@
     "builtin-modules": "^3.1.0",
     "chalk": "^4.1.0",
     "glob": "^7.1.6",
-    "lodash": "^4.17.20"
+    "lodash": "^4.17.20",
+    "minimatch": "^3.0.4"
   },
   "devDependencies": {
     "@babel/types": "^7.11.5",
