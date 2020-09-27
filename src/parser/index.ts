@@ -24,6 +24,6 @@ function getParser(fileBase: string): Maybe<Parser> {
   return PARSERS.find(({ pattern }) => minimatch(fileBase, pattern, { noglobstar: true }));
 }
 
-async function readFileAsync(path: string): Promise<string> {
-  return new Promise((resolve) => readFile(path, 'utf-8', (err, data) => (err ? resolve('') : resolve(data))));
+async function readFileAsync(filePath: string): Promise<string> {
+  return new Promise((resolve) => readFile(filePath, 'utf-8', (err, data) => (err ? resolve('') : resolve(data))));
 }

@@ -6,7 +6,7 @@ import { detectImportDeclaration, Detector, detectRequireCallExpression } from '
 import visit from './visit';
 import chalk from 'chalk';
 import { parse } from './parser';
-import { resolve } from './resolver';
+import { resolve } from './path-resolver';
 import { getInstalledPackages } from './installed-packages';
 
 type Dependency = {
@@ -62,7 +62,7 @@ async function getDependencies(
 
   return visit(ast)
     .flatMap((node) => detect(detectors, node))
-    .map((pathOfDependency) => ({ from: filepath, to: resolve(filepath, pathOfDependency, installedPackages) }));
+    .map((dependency) => ({ from: filepath, to: resolve(installedPackages, filepath, dependency) }));
 }
 
 function detect(detectors: Detector[], node: Node): string[] {

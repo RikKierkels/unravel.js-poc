@@ -5,18 +5,19 @@ import { Maybe } from './detect';
 export function getInstalledPackages(root: string): string[] {
   return glob
     .sync('**/package.json', { root, ignore: ['node_modules/**'] })
-    .flatMap((packagePath) => extractInstalledPackages(path.resolve(root, packagePath)));
+    .map((packageJsonPath) => path.resolve(root, packageJsonPath))
+    .flatMap(extractInstalledPackages);
 }
 
-function extractInstalledPackages(packagePath: string): string[] {
+function extractInstalledPackages(packageJsonPath: string): string[] {
   try {
-    const { dependencies, devDependencies } = require(packagePath);
-    return [...getKeysSafe(dependencies), ...getKeysSafe(devDependencies)];
+    const { dependencies, devDependencies } = require(packageJsonPath);
+    return [...keys(dependencies), ...keys(devDependencies)];
   } catch {
     return [];
   }
 }
 
-function getKeysSafe(object: Maybe<Object>): string[] {
+function keys(object: Maybe<Object>): string[] {
   return Object.keys(object || {});
 }
