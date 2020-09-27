@@ -34,7 +34,7 @@ async function run(patterns: string[], { detectors = [], ignore = [], root = pro
       patterns
         .flatMap((pattern) => match(pattern, ignore, root))
         .reduce<string[]>((paths, path) => (paths.includes(path) ? paths : [...paths, path]), [])
-        .map((path) => getDependencies(detectors, path, installedPackages)),
+        .map((path) => getDependencies(installedPackages, detectors, path)),
     )
   ).flat();
 
@@ -54,9 +54,9 @@ function match(pattern: string, ignore: string[] = [], root: string): string[] {
 }
 
 async function getDependencies(
+  installedPackages: string[],
   detectors: Detector[],
   filepath: string,
-  installedPackages: string[],
 ): Promise<Dependency[]> {
   const ast = await parse(filepath);
 
