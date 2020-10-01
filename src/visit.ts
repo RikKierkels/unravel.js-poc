@@ -1,8 +1,9 @@
 import { File, Node } from '@babel/types';
+import { Maybe } from './detect';
 
 export type Ast = File;
 
-export default function visit(ast: Ast, visited = new WeakSet<Node>()): Node[] {
+export default function visit(ast: Maybe<Ast>, visited = new WeakSet<Node>()): Node[] {
   if (!ast || visited.has(ast)) return [];
 
   if (Array.isArray(ast)) {
