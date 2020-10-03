@@ -8,7 +8,7 @@ import chalk from 'chalk';
 import { parse } from './parser';
 import { resolve } from './path-resolver';
 import { getInstalledPackages } from './installed-packages';
-import x from './alias';
+import getPathConfigs from './path-config';
 
 type Dependency = {
   from: string;
@@ -28,8 +28,10 @@ type Options = {
 };
 
 async function run(patterns: string[], { detectors = [], ignore = [], root = process.cwd() }: Options) {
-  const installedPackages = getInstalledPackages(root);
-  console.log(x(root));
+  const installedPackages = await getInstalledPackages(root);
+  const pathConfigs = await getPathConfigs(root);
+
+  console.log(pathConfigs);
 
   let dependencies: Dependency[] = (
     await Promise.all(
