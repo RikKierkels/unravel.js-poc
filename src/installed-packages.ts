@@ -1,7 +1,7 @@
 import * as glob from 'glob';
 import * as path from 'path';
 import { Maybe } from './detect';
-import readJsonFile from './json';
+import readJsonFile from './utils';
 
 export function getInstalledPackages(root: string): Promise<string[]> {
   return Promise.all(

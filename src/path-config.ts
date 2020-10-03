@@ -1,6 +1,6 @@
 import * as glob from 'glob';
 import * as path from 'path';
-import readJsonFile from './json';
+import { readJson } from './utils';
 
 type PathConfig = {
   baseUrl: string;
@@ -12,7 +12,7 @@ type PathAlias = {
   paths: string[];
 };
 
-export default async function x(root: string): Promise<PathConfig[]> {
+export default async function getPathConfigs(root: string): Promise<PathConfig[]> {
   return Promise.all(
     glob
       .sync('**/@(t|j)sconfig.json', { root, ignore: ['node_modules/**'] })
@@ -23,7 +23,7 @@ export default async function x(root: string): Promise<PathConfig[]> {
 
 // TODO: Future version of Typescript will make paths work without a base url.
 async function extractPaths(configPath: string): Promise<PathConfig> {
-  return readJsonFile(configPath).then(
+  return readJson(configPath).then(
     ({ compilerOptions: { baseUrl = '', paths = [] } = {} }) => ({
       baseUrl,
       aliases: resolveAliases(baseUrl, paths),
