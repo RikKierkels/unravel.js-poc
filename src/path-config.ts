@@ -2,12 +2,12 @@ import * as glob from 'glob';
 import * as path from 'path';
 import { readJson } from './utils';
 
-type PathConfig = {
+export type PathConfig = {
   baseUrl: string;
   aliases: PathAlias[];
 };
 
-type PathAlias = {
+export type PathAlias = {
   alias: string;
   paths: string[];
 };
@@ -24,10 +24,15 @@ export default async function getPathConfigs(root: string): Promise<PathConfig[]
 // TODO: Future version of Typescript will make paths work without a base url.
 async function extractPaths(configPath: string): Promise<PathConfig> {
   return readJson(configPath).then(
-    ({ compilerOptions: { baseUrl = '', paths = [] } = {} }) => ({
-      baseUrl,
-      aliases: resolveAliases(baseUrl, paths),
-    }),
+    ({ compilerOptions: { baseUrl = '', paths = [] } = {} }) => {
+      // TODO: Refactor
+      baseUrl = path.resolve(path.dirname(configPath), baseUrl);
+
+      return {
+        baseUrl,
+        aliases: resolveAliases(baseUrl, paths),
+      };
+    },
     () => ({ baseUrl: '', aliases: [] }),
   );
 }

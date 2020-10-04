@@ -1,7 +1,7 @@
 import * as glob from 'glob';
 import * as path from 'path';
 import { Maybe } from './detect';
-import readJsonFile from './utils';
+import { readJson } from './utils';
 
 export function getInstalledPackages(root: string): Promise<string[]> {
   return Promise.all(
@@ -13,7 +13,7 @@ export function getInstalledPackages(root: string): Promise<string[]> {
 }
 
 async function extractInstalledPackages(packageJsonPath: string): Promise<string[]> {
-  return readJsonFile(packageJsonPath).then(
+  return readJson(packageJsonPath).then(
     ({ dependencies, devDependencies }) => [...keys(dependencies), ...keys(devDependencies)],
     () => [],
   );

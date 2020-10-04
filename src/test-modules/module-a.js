@@ -1,6 +1,7 @@
 import moduleB from './module-b.js'; // 0
 import moduleC from './module-c.js'; // 0
-import moduleD from 'src/test-modules/module-c.js';
+import moduleD from 'module-c.js';
+import moduleE from '@nested/module-b.js';
 
 const a = import(() => ''); // 1
 
@@ -16,17 +17,17 @@ function c() {
   const e = import(() => ''); // 4-1
 });
 
-const f = require('fs1'); // 5
+const f = require('fs'); // 5
 
-require('fs2'); // 6
+require('fs'); // 6
 
 function funct() {
   // 3
-  const g = require('fs3'); // 3-1
+  const g = require('fs'); // 3-1
 }
 
 const bla = require('./module-b');
-const bla2 = require('module-b');
+const bla2 = require('nested-modules/module-b');
 
 export default {
   module: moduleD,
