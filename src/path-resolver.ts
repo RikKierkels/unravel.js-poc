@@ -1,6 +1,6 @@
 import path from 'path';
 import builtinModules from 'builtin-modules';
-import { PathAlias, PathConfig } from './path-config';
+import { Alias, PathConfig } from './path-config';
 
 export function resolve(
   installedPackages: string[],
@@ -15,6 +15,7 @@ export function resolve(
     : resolveAbsoluteModule(targetModule, configPaths);
 }
 
+// TODO: Is dot a valid first character for a path alias?
 function isRelative([firstChar]: string): boolean {
   return firstChar === '.';
 }
@@ -31,11 +32,11 @@ function resolveAbsoluteModule(module: string, configPaths: PathConfig[]) {
   return alias ? resolveAbsoluteModuleWithAlias(module, alias) : resolveAbsoluteModuleWithBaseUrl(module, baseUrls);
 }
 
-function resolveAbsoluteModuleWithAlias(module: string, { alias, paths }: PathAlias): string {
+function resolveAbsoluteModuleWithAlias(module: string, { pattern, substitudes }: Alias): string {
   // TODO: Refactor
-  module = module.replace(alias, '').replace('/', './');
+  module = module.replace(pattern, '').replace('/', './');
 
-  return tryToResolveModule(module, paths);
+  return tryToResolveModule(module, substitudes);
 }
 
 function resolveAbsoluteModuleWithBaseUrl(module: string, baseUrls: string[]): string {

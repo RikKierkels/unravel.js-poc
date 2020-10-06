@@ -5,7 +5,7 @@ import { cloneDeep, last } from 'lodash';
 import { detectImportDeclaration, Detector, detectRequireCallExpression } from './detect';
 import visit from './visit';
 import chalk from 'chalk';
-import { parse } from './parser';
+import { parse } from './file-parser';
 import { resolve } from './path-resolver';
 import { getInstalledPackages } from './installed-packages';
 import getPathConfigs, { PathConfig } from './path-config';

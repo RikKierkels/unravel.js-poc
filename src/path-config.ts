@@ -4,12 +4,12 @@ import { readJson } from './utils';
 
 export type PathConfig = {
   baseUrl: string;
-  aliases: PathAlias[];
+  aliases: Alias[];
 };
 
-export type PathAlias = {
-  alias: string;
-  paths: string[];
+export type Alias = {
+  pattern: string;
+  substitudes: string[];
 };
 
 export default async function getPathConfigs(root: string): Promise<PathConfig[]> {
@@ -37,6 +37,9 @@ async function extractPaths(configPath: string): Promise<PathConfig> {
   );
 }
 
-function resolveAliases(baseUrl: string, paths: { [key: string]: string[] }): PathAlias[] {
-  return Object.keys(paths).map((alias) => ({ alias, paths: paths[alias].map((p) => path.resolve(baseUrl, p)) }));
+function resolveAliases(baseUrl: string, paths: { [key: string]: string[] }): Alias[] {
+  return Object.keys(paths).map((alias) => ({
+    pattern: alias,
+    substitudes: paths[alias].map((p) => path.resolve(baseUrl, p)),
+  }));
 }
