@@ -19,7 +19,7 @@ type CompilerOptions = {
 };
 type TsConfig = TsConfigOptions & { compilerOptions: CompilerOptions };
 
-const optionsResolvers = [getOptionsFromConfigFiles];
+const optionsResolvers = [getOptionsFromTsConfigs];
 
 export async function getPathResolverOptions(root: string): Promise<PathResolverOptions> {
   const options = optionsResolvers.flatMap((resolver) => resolver(root));
@@ -32,14 +32,14 @@ export async function getPathResolverOptions(root: string): Promise<PathResolver
     }));
 }
 
-function getOptionsFromConfigFiles(root: string): Promise<PathResolverOptions | null>[] {
+function getOptionsFromTsConfigs(root: string): Promise<PathResolverOptions | null>[] {
   return glob
     .sync('**/@(t|j)sconfig.json', { root, ignore: ['node_modules/**'] })
     .map((configPath) => path.resolve(root, configPath))
-    .map(getOptionsFromConfigFile);
+    .map(getOptionsFromTsConfig);
 }
 
-function getOptionsFromConfigFile(configPath: string): Promise<PathResolverOptions | null> {
+function getOptionsFromTsConfig(configPath: string): Promise<PathResolverOptions | null> {
   return readJson<TsConfig>(configPath).then(
     ({ compilerOptions }) => resolveOptionsFromConfig(configPath, compilerOptions),
     () => null,
