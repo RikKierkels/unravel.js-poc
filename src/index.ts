@@ -7,7 +7,7 @@ import visit from './visit';
 import chalk from 'chalk';
 import { parse } from './file-parser';
 import { resolve } from './path-resolver';
-import { getPathResolverOptions, PathResolverOptions } from './path-config';
+import { getPathResolverOptions, PathResolverOptions } from './path-resolver-options';
 
 type Dependency = {
   from: string;

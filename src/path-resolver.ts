@@ -1,8 +1,7 @@
 import path from 'path';
-import { PathResolverOptions } from '../path-config';
+import { PathResolverOptions } from './path-resolver-options';
 
 type PathResolver = (options: PathResolverOptions, modulePath: string) => string | null;
-
 const resolvers: PathResolver[] = [resolvePathFromAlias, resolvePathFromBase];
 
 export function resolve(options: PathResolverOptions, fromPath: string, toPath: string): string {
