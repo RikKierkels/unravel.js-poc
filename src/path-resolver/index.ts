@@ -1,16 +1,12 @@
 import path from 'path';
-import { Alias } from '../path-config';
+import { PathResolverOptions } from '../path-config';
 
-type PathResolverOptions = {
-  baseUrls: string[];
-  alias: Alias[];
-};
 type PathResolver = (options: PathResolverOptions, modulePath: string) => string | null;
 
 const resolvers: PathResolver[] = [resolvePathFromAlias, resolvePathFromBase];
 
-export function resolve(options: PathResolverOptions, fromPath: string, toPath: string): string | null {
-  if (isRelativePath(toPath)) return tryResolvingPath(toPath, [path.dirname(fromPath)]);
+export function resolve(options: PathResolverOptions, fromPath: string, toPath: string): string {
+  if (isRelativePath(toPath)) return tryToResolvePath(toPath, [path.dirname(fromPath)]) || ''; // TODO: This should actually return null if path not resolved
 
   const resolvedPath = resolvers.map((resolver) => resolver(options, toPath)).find((resolvedPath) => resolvedPath);
   return resolvedPath || toPath;
@@ -22,16 +18,16 @@ function resolvePathFromAlias({ alias }: PathResolverOptions, modulePath: string
   if (!matchingAlias) return null;
 
   const modulePathWithoutAlias = modulePath.replace(matchingAlias.pattern, '');
-  return tryResolvingPath(toRelativePath(modulePathWithoutAlias), matchingAlias.substitudes);
+  return tryToResolvePath(toRelativePath(modulePathWithoutAlias), matchingAlias.substitutes);
 }
 
 function resolvePathFromBase({ baseUrls }: PathResolverOptions, modulePath: string): string | null {
-  return tryResolvingPath(toRelativePath(modulePath), baseUrls);
+  return tryToResolvePath(toRelativePath(modulePath), baseUrls);
 }
 
-function tryResolvingPath(modulePath: string, paths: string[]): string | null {
+function tryToResolvePath(modulePath: string, paths: string[]): string | null {
   try {
-    return require.resolve(modulePath, { paths });
+    return require.resolve(modulePath, { paths: paths.map(toPosixPath) });
   } catch {
     return null;
   }
@@ -43,4 +39,8 @@ function isRelativePath(modulePath: string): boolean {
 
 function toRelativePath(modulePath: string): string {
   return isRelativePath(modulePath) ? modulePath : `./${modulePath}`;
+}
+
+function toPosixPath(modulePath: string): string {
+  return modulePath.replace(/\\/g, '/');
 }

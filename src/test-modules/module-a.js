@@ -1,7 +1,7 @@
 import moduleB from './module-b.js'; // 0
 import moduleC from './module-c.js'; // 0
 import moduleD from 'module-c.js';
-import moduleE from '@nested/module-b.js';
+import moduleE from '@nested/module-nested.js';
 
 const a = import(() => ''); // 1
 

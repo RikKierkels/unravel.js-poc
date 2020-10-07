@@ -1,45 +1,65 @@
 import * as glob from 'glob';
 import * as path from 'path';
-import { readJson } from './utils';
+import { TsConfigOptions } from 'ts-node';
+import { isNotNull, readJson } from './utils';
 
-export type PathConfig = {
-  baseUrl: string;
-  aliases: Alias[];
+export type PathResolverOptions = {
+  baseUrls: string[];
+  alias: Alias[];
 };
 
 export type Alias = {
   pattern: string;
-  substitudes: string[];
+  substitutes: string[];
 };
 
-export default async function getPathConfigs(root: string): Promise<PathConfig[]> {
-  return Promise.all(
-    glob
-      .sync('**/@(t|j)sconfig.json', { root, ignore: ['node_modules/**'] })
-      .map((configPath) => path.resolve(root, configPath))
-      .map(extractPaths),
-  ).then((configs) => configs.filter((config) => config.baseUrl));
+type CompilerOptions = {
+  baseUrl: string;
+  paths: { [key: string]: string[] };
+};
+type TsConfig = TsConfigOptions & { compilerOptions: CompilerOptions };
+
+const optionsResolvers = [getOptionsFromConfigFiles];
+
+export async function getPathResolverOptions(root: string): Promise<PathResolverOptions> {
+  const options = optionsResolvers.flatMap((resolver) => resolver(root));
+
+  return Promise.all(options)
+    .then((options) => options.filter(isNotNull))
+    .then((options) => ({
+      baseUrls: options.flatMap(({ baseUrls }) => baseUrls),
+      alias: options.flatMap(({ alias }) => alias),
+    }));
 }
 
-// TODO: Future version of Typescript will make paths work without a base url.
-async function extractPaths(configPath: string): Promise<PathConfig> {
-  return readJson(configPath).then(
-    ({ compilerOptions: { baseUrl = '', paths = [] } = {} }) => {
-      // TODO: Refactor
-      baseUrl = path.resolve(path.dirname(configPath), baseUrl);
+function getOptionsFromConfigFiles(root: string): Promise<PathResolverOptions | null>[] {
+  return glob
+    .sync('**/@(t|j)sconfig.json', { root, ignore: ['node_modules/**'] })
+    .map((configPath) => path.resolve(root, configPath))
+    .map(getOptionsFromConfigFile);
+}
 
-      return {
-        baseUrl,
-        aliases: resolveAliases(baseUrl, paths),
-      };
-    },
-    () => ({ baseUrl: '', aliases: [] }),
+function getOptionsFromConfigFile(configPath: string): Promise<PathResolverOptions | null> {
+  return readJson<TsConfig>(configPath).then(
+    ({ compilerOptions }) => resolveOptionsFromConfig(configPath, compilerOptions),
+    () => null,
   );
 }
 
-function resolveAliases(baseUrl: string, paths: { [key: string]: string[] }): Alias[] {
-  return Object.keys(paths).map((alias) => ({
-    pattern: alias,
-    substitudes: paths[alias].map((p) => path.resolve(baseUrl, p)),
-  }));
+function resolveOptionsFromConfig(configPath: string, { baseUrl, paths }: CompilerOptions): PathResolverOptions | null {
+  if (!baseUrl) return null;
+
+  const absoluteBaseUrl = toAbsolutePathFromDir(configPath, baseUrl);
+
+  return {
+    baseUrls: [absoluteBaseUrl],
+    alias: Object.keys(paths).map((pattern) => ({
+      pattern,
+      substitutes: paths[pattern].map((substitute) => path.resolve(absoluteBaseUrl, substitute)),
+    })),
+  };
+}
+
+function toAbsolutePathFromDir(fromPath: string, toPath: string): string {
+  return path.resolve(path.dirname(fromPath), toPath);
 }

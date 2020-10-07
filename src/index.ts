@@ -7,8 +7,7 @@ import visit from './visit';
 import chalk from 'chalk';
 import { parse } from './file-parser';
 import { resolve } from './path-resolver';
-import { getInstalledPackages } from './installed-packages';
-import getPathConfigs, { PathConfig } from './path-config';
+import { getPathResolverOptions, PathResolverOptions } from './path-config';
 
 type Dependency = {
   from: string;
@@ -28,15 +27,15 @@ type Options = {
 };
 
 async function run(patterns: string[], { detectors = [], ignore = [], root = process.cwd() }: Options) {
-  const installedPackages = await getInstalledPackages(root);
-  const pathConfigs = await getPathConfigs(root);
+  const pathResolverOptions = await getPathResolverOptions(root);
+  console.log(pathResolverOptions);
 
   let dependencies: Dependency[] = (
     await Promise.all(
       patterns
         .flatMap((pattern) => match(pattern, ignore, root))
         .reduce<string[]>((paths, path) => (paths.includes(path) ? paths : [...paths, path]), [])
-        .map((path) => getDependencies(installedPackages, pathConfigs, detectors, path)),
+        .map((path) => getDependencies(pathResolverOptions, detectors, path)),
     )
   ).flat();
 
@@ -56,8 +55,7 @@ function match(pattern: string, ignore: string[] = [], root: string): string[] {
 }
 
 async function getDependencies(
-  installedPackages: string[],
-  pathConfigs: PathConfig[],
+  pathResolverOptions: PathResolverOptions,
   detectors: Detector[],
   filepath: string,
 ): Promise<Dependency[]> {
@@ -65,7 +63,7 @@ async function getDependencies(
 
   return visit(ast)
     .flatMap((node) => detect(detectors, node))
-    .map((dependency) => ({ from: filepath, to: resolve(installedPackages, pathConfigs, filepath, dependency) }));
+    .map((dependency) => ({ from: filepath, to: resolve(pathResolverOptions, filepath, dependency) }));
 }
 
 function detect(detectors: Detector[], node: Node): string[] {
