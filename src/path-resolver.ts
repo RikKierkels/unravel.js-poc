@@ -1,45 +1,23 @@
-import path from 'path';
-import { PathResolverOptions } from './path-resolver-options';
+import { isNotNull, isRelativePath, toAbsolutePathFromDir } from './utils';
+import { AbsPathResolver } from './path-resolver-options';
 
-type PathResolver = (options: PathResolverOptions, modulePath: string) => string | null;
-const resolvers: PathResolver[] = [resolvePathFromAlias, resolvePathFromBase];
+export function resolve(absPathResolvers: AbsPathResolver[], fromPath: string, toPath: string): string {
+  if (isRelativePath(toPath)) {
+    return tryToResolvePath(toAbsolutePathFromDir(fromPath, toPath)) || ''; // TODO: This should actually return null if path not resolved
+  }
 
-export function resolve(options: PathResolverOptions, fromPath: string, toPath: string): string {
-  if (isRelativePath(toPath)) return tryToResolvePath(toPath, [path.dirname(fromPath)]) || ''; // TODO: This should actually return null if path not resolved
+  const resolvedPaths = absPathResolvers
+    .flatMap((resolver) => resolver(fromPath, toPath))
+    .map(tryToResolvePath)
+    .filter(isNotNull);
 
-  const resolvedPath = resolvers.map((resolver) => resolver(options, toPath)).find((resolvedPath) => resolvedPath);
-  return resolvedPath || toPath;
+  return resolvedPaths[resolvedPaths.length - 1] || toPath;
 }
 
-function resolvePathFromAlias({ alias }: PathResolverOptions, modulePath: string): string | null {
-  const matchingAlias = alias.find(({ pattern }) => modulePath.includes(pattern));
-
-  if (!matchingAlias) return null;
-
-  const modulePathWithoutAlias = modulePath.replace(matchingAlias.pattern, '');
-  return tryToResolvePath(toRelativePath(modulePathWithoutAlias), matchingAlias.substitutes);
-}
-
-function resolvePathFromBase({ baseUrls }: PathResolverOptions, modulePath: string): string | null {
-  return tryToResolvePath(toRelativePath(modulePath), baseUrls);
-}
-
-function tryToResolvePath(modulePath: string, paths: string[]): string | null {
+function tryToResolvePath(modulePath: string): string | null {
   try {
-    return require.resolve(modulePath, { paths: paths.map(toPosixPath) });
+    return require.resolve(modulePath);
   } catch {
     return null;
   }
-}
-
-function isRelativePath(modulePath: string): boolean {
-  return /^\.?\.\//.test(modulePath);
-}
-
-function toRelativePath(modulePath: string): string {
-  return isRelativePath(modulePath) ? modulePath : `./${modulePath}`;
-}
-
-function toPosixPath(modulePath: string): string {
-  return modulePath.replace(/\\/g, '/');
 }

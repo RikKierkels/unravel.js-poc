@@ -2,7 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@nested": ["nested1-modules", "nested-modules/nested-nested-modules"]
+      "@nested/*": ["nested1-modules", "nested-modules/nested-nested-modules/*"]
     }
   }
 }
