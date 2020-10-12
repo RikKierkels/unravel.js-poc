@@ -99,7 +99,9 @@ function tryToResolvePathFromOptions(
 }
 
 function matchStar(pattern: string, modulePath: string): string | null {
-  if (modulePath.length < pattern.length) return null;
+  if (modulePath.length < pattern.length) {
+    return null;
+  }
 
   if (isMatchAllPattern(pattern)) {
     return modulePath;
