@@ -6,8 +6,7 @@ import { detectImportDeclaration, Detector, detectRequireCallExpression } from '
 import visit from './visit';
 import chalk from 'chalk';
 import { parse } from './file-parser';
-import { resolve } from './path-resolver';
-import { AbsPathResolver, getAbsPathResolvers } from './path-resolver-options';
+import { createPathResolver, PathResolver, PathResolverOptions } from './path-resolver';
 
 type Dependency = {
   from: string;
@@ -23,18 +22,22 @@ type Module = {
 type Options = {
   root?: string;
   ignore?: string[];
-  detectors: Detector[];
+  detectors?: Detector[];
+  pathResolverOptions?: PathResolverOptions;
 };
 
-async function run(patterns: string[], { detectors = [], ignore = [], root = process.cwd() }: Options) {
-  const absPathResolvers = await getAbsPathResolvers(root);
+async function run(
+  patterns: string[],
+  { root = process.cwd(), ignore = [], detectors = [], pathResolverOptions }: Options,
+) {
+  const pathResolver = createPathResolver(root, pathResolverOptions);
 
   let dependencies: Dependency[] = (
     await Promise.all(
       patterns
         .flatMap((pattern) => match(pattern, ignore, root))
         .reduce<string[]>((paths, path) => (paths.includes(path) ? paths : [...paths, path]), [])
-        .map((path) => getDependencies(absPathResolvers, detectors, path)),
+        .map((path) => getDependencies(pathResolver, detectors, path)),
     )
   ).flat();
 
@@ -54,7 +57,7 @@ function match(pattern: string, ignore: string[] = [], root: string): string[] {
 }
 
 async function getDependencies(
-  absPathResolvers: AbsPathResolver[],
+  pathResolver: PathResolver,
   detectors: Detector[],
   filepath: string,
 ): Promise<Dependency[]> {
@@ -62,7 +65,7 @@ async function getDependencies(
 
   return visit(ast)
     .flatMap((node) => detect(detectors, node))
-    .map((dependency) => ({ from: filepath, to: resolve(absPathResolvers, filepath, dependency) }));
+    .map((dependency) => ({ from: filepath, to: pathResolver(filepath, dependency) }));
 }
 
 function detect(detectors: Detector[], node: Node): string[] {
@@ -106,5 +109,10 @@ function print(modules: Module[], indentation: number = 0, maxIndentation = 2): 
 
 (async () =>
   await run(['src/**'], {
+    root: 'src',
     detectors: [detectImportDeclaration, detectRequireCallExpression],
+    pathResolverOptions: {
+      baseUrl: './test-modules',
+      alias: [{ pattern: '@nested/*', substitutes: ['nested1-modules', 'nested-modules/nested-nested-modules/*'] }],
+    },
   }))();
