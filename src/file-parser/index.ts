@@ -3,7 +3,7 @@ import parseTypescript from './typescript';
 import { Ast } from '../visit';
 import * as path from 'path';
 import minimatch from 'minimatch';
-import { Maybe } from '../detect';
+import { Maybe } from '../detect/detect';
 import { readFile } from '../utils';
 
 type Parse = (input: string) => Ast;

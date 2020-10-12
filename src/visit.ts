@@ -1,5 +1,5 @@
 import { File, Node } from '@babel/types';
-import { Maybe } from './detect';
+import { Maybe } from './detect/detect';
 
 export type Ast = File;
 

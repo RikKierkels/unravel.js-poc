@@ -2,11 +2,13 @@ import glob from 'glob';
 import { join, parse as parsePath } from 'path';
 import { Node } from '@babel/types';
 import { cloneDeep, last } from 'lodash';
-import { detectImportDeclaration, Detector, detectRequireCallExpression } from './detect';
 import visit from './visit';
 import chalk from 'chalk';
 import { parse } from './file-parser';
 import { createPathResolver, PathResolver, PathResolverOptions } from './path-resolver';
+import detectImportDeclaration from './detect/import-declaration';
+import detectRequireCallExpression from './detect/require-call-expression';
+import { Detector } from './detect/types';
 
 type Dependency = {
   from: string;

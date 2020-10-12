@@ -1,13 +1,6 @@
 import { Node } from '@babel/types';
 
-export type Maybe<T> = T | null | undefined;
-export type Detector = (node: Node) => Maybe<string>;
-
-export function detectImportDeclaration(node: Node): Maybe<string> {
-  return node.type === 'ImportDeclaration' && node.source?.value ? node.source.value : null;
-}
-
-export function detectRequireCallExpression(node: Node): Maybe<string> {
+export default function detectRequireCallExpression(node: Node): string | null {
   if (
     node.type !== 'CallExpression' ||
     node.callee?.type !== 'Identifier' ||
