@@ -1,6 +1,6 @@
 import { Node } from '@babel/types';
 
-export default function importCallExpression(node: Node): string | null {
+export default function detectImportCallExpression(node: Node): string | null {
   return node.type === 'CallExpression' &&
     node.callee &&
     ((node.callee.type === 'Identifier' && node.callee.name === 'import') ||
